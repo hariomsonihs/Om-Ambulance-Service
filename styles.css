@@ -18,6 +18,13 @@ body {
     position: relative;
 }
 
+body.menu-active {
+    overflow: hidden !important;
+    position: fixed !important;
+    width: 100% !important;
+    height: 100% !important;
+}
+
 .container {
     max-width: 1200px;
     margin: 0 auto;
@@ -26,7 +33,6 @@ body {
     box-sizing: border-box;
 }
 
-/* Navigation */
 .navbar {
     position: fixed;
     top: 0;
@@ -35,7 +41,7 @@ body {
     width: 100%;
     background: linear-gradient(135deg, #e74c3c, #c0392b);
     backdrop-filter: blur(10px);
-    z-index: 100;
+    z-index: 999;
     padding: 1rem 0;
     box-shadow: 0 2px 20px rgba(231, 76, 60, 0.3);
     overflow: hidden;
@@ -110,6 +116,8 @@ body {
     display: none;
     flex-direction: column;
     cursor: pointer;
+    z-index: 1002;
+    position: relative;
 }
 
 .hamburger span {
@@ -120,7 +128,6 @@ body {
     transition: 0.3s;
 }
 
-/* Hero Section */
 .hero {
     min-height: 100vh;
     background: linear-gradient(135deg, #74b9ff, #0984e3, #e17055, #d63031);
@@ -131,6 +138,7 @@ body {
     padding: 100px 20px 50px;
     position: relative;
     overflow: hidden;
+    z-index: 1;
 }
 
 @keyframes gradientShift {
@@ -271,10 +279,11 @@ body {
     }
 }
 
-/* Services Section */
 .services {
     padding: 100px 0;
     background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    position: relative;
+    z-index: 1;
 }
 
 .services h2 {
@@ -367,11 +376,12 @@ body {
     border: 3px solid #e74c3c;
 }
 
-/* About Section */
 .about {
     padding: 100px 0;
     background: linear-gradient(135deg, #667eea, #764ba2);
     color: white;
+    position: relative;
+    z-index: 1;
 }
 
 .about-content {
@@ -432,7 +442,6 @@ body {
     animation: pulse 2s infinite;
 }
 
-/* Gallery Section */
 .gallery {
     padding: 80px 0;
     background: linear-gradient(135deg, #2c3e50, #34495e);
@@ -501,11 +510,12 @@ body {
     opacity: 0.9;
 }
 
-/* Emergency Banner */
 .emergency-banner {
     padding: 60px 0;
     background: linear-gradient(135deg, #e74c3c, #c0392b);
     color: white;
+    position: relative;
+    z-index: 1;
 }
 
 .banner-content {
@@ -560,11 +570,11 @@ body {
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
-/* Testimonials Section */
 .testimonials {
     position: relative;
     padding: 100px 0;
     overflow: hidden;
+    z-index: 1;
 }
 
 .testimonials-bg {
@@ -624,10 +634,11 @@ body {
     font-weight: 600;
 }
 
-/* Features Section */
 .features {
     padding: 80px 0;
     background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    position: relative;
+    z-index: 1;
 }
 
 .features h2 {
@@ -673,11 +684,12 @@ body {
     line-height: 1.6;
 }
 
-/* Contact Section */
 .contact {
     padding: 100px 0;
     background: linear-gradient(135deg, #2c3e50, #34495e);
     color: white;
+    position: relative;
+    z-index: 1;
 }
 
 .contact h2 {
@@ -718,7 +730,6 @@ body {
     color: #bdc3c7;
 }
 
-/* Modals */
 .modal {
     display: none;
     position: fixed;
@@ -832,7 +843,6 @@ body {
     text-decoration: underline;
 }
 
-/* Dashboard Tabs */
 .dashboard-tabs {
     display: flex;
     margin-bottom: 2rem;
@@ -864,7 +874,6 @@ body {
     display: block;
 }
 
-/* Profile Details */
 .profile-details {
     margin-bottom: 2rem;
 }
@@ -932,7 +941,6 @@ body {
     box-shadow: 0 5px 15px rgba(231, 76, 60, 0.4);
 }
 
-/* Booking Cards */
 .booking-card {
     background: #f8f9fa;
     padding: 1.5rem;
@@ -980,7 +988,6 @@ body {
     color: white;
 }
 
-/* Footer */
 .footer {
     background: #2c3e50;
     color: white;
@@ -988,7 +995,6 @@ body {
     padding: 2rem 0;
 }
 
-/* Responsive Design */
 @media (max-width: 768px) {
     .nav-container {
         padding: 0 10px;
@@ -1000,11 +1006,12 @@ body {
     
     .hamburger {
         display: flex;
-        z-index: 10000;
+        z-index: 10003 !important;
+        position: relative;
     }
 
     .nav-menu {
-        position: fixed;
+        position: fixed !important;
         top: 0;
         left: -280px;
         width: 280px;
@@ -1014,7 +1021,7 @@ body {
         transition: left 0.3s ease;
         padding-top: 80px;
         box-sizing: border-box;
-        z-index: 9999;
+        z-index: 10002 !important;
         box-shadow: 2px 0 15px rgba(0, 0, 0, 0.3);
         overflow-y: auto;
     }
@@ -1048,15 +1055,14 @@ body {
         text-align: center;
     }
 
-    /* Navigation Overlay */
     .nav-overlay {
-        position: fixed;
+        position: fixed !important;
         top: 0;
         left: 0;
         width: 100%;
         height: 100%;
-        background: rgba(0, 0, 0, 0.5);
-        z-index: 9998;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 10001 !important;
         opacity: 0;
         visibility: hidden;
         transition: all 0.3s ease;
@@ -1171,6 +1177,20 @@ body {
         border-left-color: #e74c3c;
         border-bottom-color: transparent;
     }
+    
+    .hamburger.active span:nth-child(1) {
+        transform: rotate(45deg) translate(5px, 5px);
+    }
+    
+    .hamburger.active span:nth-child(2) {
+        opacity: 0;
+    }
+    
+    .hamburger.active span:nth-child(3) {
+        transform: rotate(-45deg) translate(7px, -6px);
+    }
+    
+
 }
 
 @media (max-width: 480px) {
@@ -1211,7 +1231,6 @@ body {
     }
 }
 
-/* Loading Animation */
 .loading {
     display: inline-block;
     width: 20px;
@@ -1226,7 +1245,6 @@ body {
     to { transform: rotate(360deg); }
 }
 
-/* Success/Error Messages */
 .message {
     padding: 12px;
     border-radius: 8px;
@@ -1247,7 +1265,6 @@ body {
     border: 1px solid #f5c6cb;
 }
 
-/* Tracking Result */
 #trackingResult {
     margin-top: 1rem;
     padding: 1rem;
