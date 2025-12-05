@@ -1,0 +1,88 @@
+/* Mobile Navigation - Complete Rewrite */
+@media (max-width: 768px) {
+    /* Mobile Navigation Overlay */
+    .mobile-nav-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 999999998;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+    }
+    
+    .mobile-nav-overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
+    
+    /* Mobile Navigation Menu */
+    .mobile-nav-menu {
+        position: fixed;
+        top: 0;
+        left: -280px;
+        width: 280px;
+        height: 100vh;
+        background: linear-gradient(180deg, #2c3e50, #34495e);
+        z-index: 999999999;
+        padding-top: 80px;
+        box-sizing: border-box;
+        transition: left 0.3s ease;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .mobile-nav-menu.active {
+        left: 0;
+    }
+    
+    .mobile-nav-menu .nav-link {
+        padding: 18px 25px;
+        margin: 8px 15px;
+        border-radius: 12px;
+        font-size: 16px;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        background: rgba(255, 255, 255, 0.05);
+        border-left: 4px solid transparent;
+        transition: all 0.3s ease;
+        color: white;
+        text-decoration: none;
+    }
+    
+    .mobile-nav-menu .nav-link:hover {
+        background: rgba(231, 76, 60, 0.2);
+        border-left-color: #e74c3c;
+        transform: translateX(8px);
+    }
+    
+    .mobile-nav-menu .nav-link i {
+        margin-right: 12px;
+        width: 20px;
+        text-align: center;
+    }
+    
+    /* Hamburger Button */
+    .hamburger {
+        z-index: 1000000000 !important;
+        position: relative !important;
+    }
+    
+    /* Hide desktop nav menu on mobile */
+    .nav-menu {
+        display: none !important;
+    }
+    
+    /* Body scroll lock */
+    body.menu-active {
+        overflow: hidden !important;
+        position: fixed !important;
+        width: 100% !important;
+        height: 100% !important;
+    }
+}
