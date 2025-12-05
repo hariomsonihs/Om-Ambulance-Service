@@ -1,0 +1,689 @@
+// Global variables
+let currentUser = null;
+let userBookingsListener = null;
+
+// DOM Content Loaded
+document.addEventListener('DOMContentLoaded', function() {
+    initializeApp();
+    setupEventListeners();
+});
+
+function initializeApp() {
+    // Mobile navigation
+    const hamburger = document.getElementById('hamburger');
+    const navMenu = document.getElementById('nav-menu');
+    const navOverlay = document.getElementById('nav-overlay');
+    
+    hamburger.addEventListener('click', () => {
+        hamburger.classList.toggle('active');
+        navMenu.classList.toggle('active');
+        navOverlay.classList.toggle('active');
+        document.body.style.overflow = navMenu.classList.contains('active') ? 'hidden' : 'auto';
+    });
+
+    // Close navigation when overlay is clicked
+    navOverlay.addEventListener('click', () => {
+        hamburger.classList.remove('active');
+        navMenu.classList.remove('active');
+        navOverlay.classList.remove('active');
+        document.body.style.overflow = 'auto';
+    });
+
+    // Close mobile menu when clicking on links
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.addEventListener('click', () => {
+            hamburger.classList.remove('active');
+            navMenu.classList.remove('active');
+            navOverlay.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        });
+    });
+
+    // Close navigation on window resize
+    window.addEventListener('resize', () => {
+        if (window.innerWidth > 768) {
+            hamburger.classList.remove('active');
+            navMenu.classList.remove('active');
+            navOverlay.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+    });
+
+    // Smooth scrolling for navigation links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            const href = this.getAttribute('href');
+            if (href && href !== '#') {
+                e.preventDefault();
+                const target = document.querySelector(href);
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            }
+        });
+    });
+}
+
+function setupEventListeners() {
+    // Form submissions
+    document.getElementById('loginForm').addEventListener('submit', handleLogin);
+    document.getElementById('registerForm').addEventListener('submit', handleRegister);
+    document.getElementById('bookingForm').addEventListener('submit', handleBooking);
+    document.getElementById('trackingForm').addEventListener('submit', handleTracking);
+
+    // Close modals when clicking outside
+    window.addEventListener('click', function(event) {
+        const modals = document.querySelectorAll('.modal');
+        modals.forEach(modal => {
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+    });
+}
+
+// Modal functions
+function showModal(modalId) {
+    document.getElementById(modalId).style.display = 'block';
+}
+
+function closeModal(modalId) {
+    document.getElementById(modalId).style.display = 'none';
+}
+
+function showLogin() {
+    closeAllModals();
+    showModal('loginModal');
+}
+
+function showRegister() {
+    closeAllModals();
+    showModal('registerModal');
+}
+
+function showBooking() {
+    if (!auth.currentUser) {
+        showMessage('Please login first to book ambulance', 'error');
+        showLogin();
+        return;
+    }
+    closeAllModals();
+    showModal('bookingModal');
+}
+
+function showTracking() {
+    closeAllModals();
+    showModal('trackingModal');
+}
+
+function showDashboard() {
+    if (!auth.currentUser) {
+        showLogin();
+        return;
+    }
+    closeAllModals();
+    showModal('dashboardModal');
+    
+    // Add small delay to ensure modal is visible
+    setTimeout(() => {
+        loadUserDashboard();
+    }, 100);
+}
+
+function closeAllModals() {
+    const modals = document.querySelectorAll('.modal');
+    modals.forEach(modal => {
+        modal.style.display = 'none';
+    });
+}
+
+// Authentication handlers
+async function handleLogin(e) {
+    e.preventDefault();
+    
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPassword').value;
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    
+    submitBtn.innerHTML = '<span class="loading"></span> Logging in...';
+    submitBtn.disabled = true;
+    
+    try {
+        const userCredential = await auth.signInWithEmailAndPassword(email, password);
+        const user = userCredential.user;
+        
+        // Check user role
+        const userDoc = await db.collection('users').doc(user.uid).get();
+        if (userDoc.exists) {
+            const userData = userDoc.data();
+            if (userData.role === 'admin') {
+                showMessage('Admin login successful! Redirecting...', 'success');
+                setTimeout(() => {
+                    window.location.href = 'admin.html';
+                }, 1000);
+                return;
+            }
+        }
+        
+        showMessage('Login successful!', 'success');
+        closeModal('loginModal');
+        document.getElementById('loginForm').reset();
+        
+    } catch (error) {
+        console.error('Login error:', error);
+        showMessage('Login failed: ' + error.message, 'error');
+    }
+    
+    submitBtn.innerHTML = 'Login';
+    submitBtn.disabled = false;
+}
+
+async function handleRegister(e) {
+    e.preventDefault();
+    
+    const name = document.getElementById('registerName').value;
+    const email = document.getElementById('registerEmail').value;
+    const phone = document.getElementById('registerPhone').value;
+    const address = document.getElementById('registerAddress').value;
+    const password = document.getElementById('registerPassword').value;
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    
+    if (password.length < 6) {
+        showMessage('Password must be at least 6 characters long', 'error');
+        return;
+    }
+    
+    submitBtn.innerHTML = '<span class="loading"></span> Registering...';
+    submitBtn.disabled = true;
+    
+    try {
+        console.log('Starting registration for:', email);
+        
+        // Create Firebase Auth user
+        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+        const user = userCredential.user;
+        
+        console.log('Auth user created:', user.uid);
+        
+        // Test Firestore first
+        const firestoreWorking = await testFirestore();
+        if (!firestoreWorking) {
+            throw new Error('Firestore connection failed');
+        }
+        
+        // Save user data to Firestore
+        const userData = {
+            name: name,
+            email: email,
+            phone: phone,
+            address: address,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            role: 'user'
+        };
+        
+        console.log('Saving user data:', userData);
+        const docRef = await db.collection('users').doc(user.uid).set(userData);
+        console.log('User data saved to Firestore successfully');
+        
+        // Verify data was saved
+        const savedDoc = await db.collection('users').doc(user.uid).get();
+        if (savedDoc.exists) {
+            console.log('Verification: Data exists in Firestore:', savedDoc.data());
+        } else {
+            console.error('Verification failed: Data not found in Firestore');
+        }
+        
+        showMessage('Registration successful! You are now logged in.', 'success');
+        closeModal('registerModal');
+        document.getElementById('registerForm').reset();
+        
+    } catch (error) {
+        console.error('Registration error:', error);
+        showMessage('Registration failed: ' + error.message, 'error');
+    }
+    
+    submitBtn.innerHTML = 'Register';
+    submitBtn.disabled = false;
+}
+
+// Booking handler
+async function handleBooking(e) {
+    e.preventDefault();
+    
+    const bookingData = {
+        patientName: document.getElementById('patientName').value,
+        contactNumber: document.getElementById('contactNumber').value,
+        pickupAddress: document.getElementById('pickupAddress').value,
+        destination: document.getElementById('destination').value,
+        emergencyType: document.getElementById('emergencyType').value,
+        additionalInfo: document.getElementById('additionalInfo').value
+    };
+    
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    submitBtn.innerHTML = '<span class="loading"></span> Booking...';
+    submitBtn.disabled = true;
+    
+    try {
+        const result = await createBooking(bookingData);
+        
+        if (result.success) {
+            showMessage(`Booking successful! Your booking ID is: ${result.booking.bookingId}`, 'success');
+            closeModal('bookingModal');
+            document.getElementById('bookingForm').reset();
+            
+            // Show booking confirmation
+            setTimeout(() => {
+                alert(`Ambulance booked successfully!\n\nBooking ID: ${result.booking.bookingId}\nPatient: ${bookingData.patientName}\nPickup: ${bookingData.pickupAddress}\n\nOur team will contact you shortly.`);
+            }, 1000);
+        } else {
+            showMessage(result.error, 'error');
+        }
+    } catch (error) {
+        showMessage('Booking failed. Please try again.', 'error');
+    }
+    
+    submitBtn.innerHTML = 'Book Now';
+    submitBtn.disabled = false;
+}
+
+// Tracking handler
+async function handleTracking(e) {
+    e.preventDefault();
+    
+    const bookingId = document.getElementById('bookingId').value;
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    const resultDiv = document.getElementById('trackingResult');
+    
+    submitBtn.innerHTML = '<span class="loading"></span> Tracking...';
+    submitBtn.disabled = true;
+    
+    try {
+        const result = await trackBooking(bookingId);
+        
+        if (result.success) {
+            const booking = result.booking;
+            const statusColor = getStatusColor(booking.status);
+            
+            resultDiv.innerHTML = `
+                <h3>Booking Details</h3>
+                <div class="tracking-info">
+                    <span>Booking ID:</span>
+                    <span><strong>${booking.bookingId}</strong></span>
+                </div>
+                <div class="tracking-info">
+                    <span>Patient:</span>
+                    <span>${booking.patientName}</span>
+                </div>
+                <div class="tracking-info">
+                    <span>Status:</span>
+                    <span class="booking-status status-${booking.status}">${booking.status.toUpperCase()}</span>
+                </div>
+                <div class="tracking-info">
+                    <span>Pickup Address:</span>
+                    <span>${booking.pickupAddress}</span>
+                </div>
+                <div class="tracking-info">
+                    <span>Destination:</span>
+                    <span>${booking.destination}</span>
+                </div>
+                <div class="tracking-info">
+                    <span>Emergency Type:</span>
+                    <span>${booking.emergencyType}</span>
+                </div>
+                ${booking.additionalNotes ? `
+                <div class="tracking-info">
+                    <span>Additional Notes:</span>
+                    <span>${booking.additionalNotes}</span>
+                </div>
+                ` : ''}
+            `;
+            resultDiv.style.display = 'block';
+        } else {
+            showMessage(result.error, 'error');
+            resultDiv.style.display = 'none';
+        }
+    } catch (error) {
+        showMessage('Tracking failed. Please try again.', 'error');
+        resultDiv.style.display = 'none';
+    }
+    
+    submitBtn.innerHTML = 'Track';
+    submitBtn.disabled = false;
+}
+
+// Dashboard functions
+async function loadUserDashboard() {
+    const user = auth.currentUser;
+    if (!user) return;
+    
+    try {
+        console.log('Loading dashboard for user:', user.uid);
+        
+        // Show loading message
+        document.getElementById('userProfile').innerHTML = '<div class="loading"></div> Loading profile...';
+        
+        // Load user profile directly from Firestore
+        const userDoc = await db.collection('users').doc(user.uid).get();
+        
+        if (userDoc.exists) {
+            const userData = userDoc.data();
+            console.log('User data found:', userData);
+            displayUserProfile(userData);
+        } else {
+            console.log('No user document found, creating basic profile');
+            // Create basic profile from auth data
+            const basicProfile = {
+                name: user.displayName || 'User',
+                email: user.email,
+                phone: 'Not provided',
+                address: 'Not provided',
+                createdAt: new Date()
+            };
+            displayUserProfile(basicProfile);
+        }
+        
+        // Load user bookings
+        loadUserBookings(user.uid);
+    } catch (error) {
+        console.error('Error loading dashboard:', error);
+        document.getElementById('userProfile').innerHTML = '<p>Error loading profile data: ' + error.message + '</p>';
+    }
+}
+
+function displayUserProfile(userData) {
+    console.log('Displaying profile for:', userData);
+    const profileDiv = document.getElementById('userProfile');
+    
+    if (!userData) {
+        profileDiv.innerHTML = '<p>No profile data available</p>';
+        return;
+    }
+    
+    profileDiv.innerHTML = `
+        <div class="profile-info">
+            <div class="profile-item">
+                <i class="fas fa-user"></i>
+                <div>
+                    <strong>Name:</strong>
+                    <span>${userData.name || 'Not provided'}</span>
+                </div>
+            </div>
+            <div class="profile-item">
+                <i class="fas fa-envelope"></i>
+                <div>
+                    <strong>Email:</strong>
+                    <span>${userData.email || 'Not provided'}</span>
+                </div>
+            </div>
+            <div class="profile-item">
+                <i class="fas fa-phone"></i>
+                <div>
+                    <strong>Phone:</strong>
+                    <span>${userData.phone || 'Not provided'}</span>
+                </div>
+            </div>
+            <div class="profile-item">
+                <i class="fas fa-map-marker-alt"></i>
+                <div>
+                    <strong>Address:</strong>
+                    <span>${userData.address || 'Not provided'}</span>
+                </div>
+            </div>
+            <div class="profile-item">
+                <i class="fas fa-calendar-alt"></i>
+                <div>
+                    <strong>Member Since:</strong>
+                    <span>${formatDate(userData.createdAt)}</span>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+async function loadUserBookings(userId) {
+    const bookingsDiv = document.getElementById('userBookings');
+    bookingsDiv.innerHTML = '<div class="loading"></div> Loading bookings...';
+    
+    // Set up real-time listener
+    if (userBookingsListener) {
+        userBookingsListener();
+    }
+    
+    userBookingsListener = listenToUserBookings(userId, (snapshot) => {
+        const bookings = [];
+        snapshot.forEach(doc => {
+            bookings.push({ id: doc.id, ...doc.data() });
+        });
+        
+        displayUserBookings(bookings);
+    });
+}
+
+function displayUserBookings(bookings) {
+    const bookingsDiv = document.getElementById('userBookings');
+    
+    if (bookings.length === 0) {
+        bookingsDiv.innerHTML = '<p>No bookings found.</p>';
+        return;
+    }
+    
+    // Sort bookings by date (newest first)
+    const sortedBookings = bookings.sort((a, b) => {
+        const aTime = a.createdAt?.toDate?.() || new Date(a.createdAt);
+        const bTime = b.createdAt?.toDate?.() || new Date(b.createdAt);
+        return bTime - aTime;
+    });
+    
+    const bookingsHTML = sortedBookings.map(booking => `
+        <div class="booking-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h4>Booking #${booking.bookingId}</h4>
+                <span class="booking-status status-${booking.status}">${getStatusText(booking.status)}</span>
+            </div>
+            <p><strong>Patient:</strong> ${booking.patientName}</p>
+            <p><strong>Contact:</strong> ${booking.contactNumber}</p>
+            <p><strong>Pickup:</strong> ${booking.pickupAddress}</p>
+            <p><strong>Destination:</strong> ${booking.destination}</p>
+            <p><strong>Emergency Type:</strong> ${booking.emergencyType}</p>
+            <p><strong>Date:</strong> ${formatDate(booking.createdAt)}</p>
+            ${booking.additionalInfo ? `<p><strong>Additional Info:</strong> ${booking.additionalInfo}</p>` : ''}
+            ${booking.additionalNotes ? `<p><strong>Admin Notes:</strong> ${booking.additionalNotes}</p>` : ''}
+        </div>
+    `).join('');
+    
+    bookingsDiv.innerHTML = bookingsHTML;
+}
+
+// Get status display text
+function getStatusText(status) {
+    const statusMap = {
+        'booked': 'BOOKED',
+        'confirmed': 'CONFIRMED',
+        'dispatched': 'DISPATCHED',
+        'completed': 'COMPLETED',
+        'cancelled': 'CANCELLED'
+    };
+    return statusMap[status] || status.toUpperCase();
+}
+
+// Tab functions
+function showTab(tabName) {
+    // Hide all tab contents
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    // Remove active class from all tab buttons
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Show selected tab content
+    document.getElementById(tabName).classList.add('active');
+    
+    // Add active class to clicked button
+    event.target.classList.add('active');
+}
+
+// Logout handler
+async function handleLogout() {
+    try {
+        await logoutUser();
+        closeAllModals();
+        showMessage('Logged out successfully!', 'success');
+        
+        // Clean up listeners
+        if (userBookingsListener) {
+            userBookingsListener();
+            userBookingsListener = null;
+        }
+    } catch (error) {
+        showMessage('Logout failed. Please try again.', 'error');
+    }
+}
+
+// Load user data when authenticated
+async function loadUserData(userId) {
+    currentUser = userId;
+    console.log('User authenticated:', userId);
+    
+    // Test if we can fetch user data
+    try {
+        const userData = await getUserData(userId);
+        console.log('User data loaded:', userData);
+    } catch (error) {
+        console.error('Error loading user data:', error);
+    }
+}
+
+// Utility functions
+function showMessage(message, type) {
+    // Remove existing messages
+    const existingMessages = document.querySelectorAll('.message');
+    existingMessages.forEach(msg => msg.remove());
+    
+    // Create new message
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${type}`;
+    messageDiv.textContent = message;
+    
+    // Insert at the top of the body
+    document.body.insertBefore(messageDiv, document.body.firstChild);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        messageDiv.remove();
+    }, 5000);
+}
+
+function formatDate(timestamp) {
+    if (!timestamp) return 'N/A';
+    
+    let date;
+    if (timestamp.toDate) {
+        date = timestamp.toDate();
+    } else {
+        date = new Date(timestamp);
+    }
+    
+    return date.toLocaleDateString('en-IN', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+function getStatusColor(status) {
+    const colors = {
+        'pending': '#f39c12',
+        'confirmed': '#27ae60',
+        'completed': '#3498db',
+        'cancelled': '#e74c3c'
+    };
+    return colors[status] || '#7f8c8d';
+}
+
+// Emergency call function
+function makeEmergencyCall() {
+    if (confirm('Do you want to call emergency services?')) {
+        window.location.href = 'tel:108';
+    }
+}
+
+// Delete account function
+async function deleteAccount() {
+    if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+        try {
+            const user = auth.currentUser;
+            if (user) {
+                // Delete user data from Firestore
+                await db.collection('users').doc(user.uid).delete();
+                
+                // Delete user bookings
+                const bookingsSnapshot = await db.collection('bookings')
+                    .where('userId', '==', user.uid)
+                    .get();
+                
+                const batch = db.batch();
+                bookingsSnapshot.forEach(doc => {
+                    batch.delete(doc.ref);
+                });
+                await batch.commit();
+                
+                // Delete Firebase Auth account
+                await user.delete();
+                
+                showMessage('Account deleted successfully!', 'success');
+                closeAllModals();
+            }
+        } catch (error) {
+            showMessage('Error deleting account: ' + error.message, 'error');
+        }
+    }
+}
+
+// Add emergency call button functionality
+document.addEventListener('DOMContentLoaded', function() {
+    // Add emergency floating button
+    const emergencyBtn = document.createElement('div');
+    emergencyBtn.innerHTML = `
+        <button onclick="makeEmergencyCall()" style="
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4);
+            z-index: 1000;
+            transition: all 0.3s ease;
+        " onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+            <i class="fas fa-phone"></i>
+        </button>
+    `;
+    document.body.appendChild(emergencyBtn);
+});
+
+// Service Worker Registration (for PWA functionality)
+// Commented out until sw.js is created
+// if ('serviceWorker' in navigator) {
+//     window.addEventListener('load', function() {
+//         navigator.serviceWorker.register('/sw.js')
+//             .then(function(registration) {
+//                 console.log('ServiceWorker registration successful');
+//             })
+//             .catch(function(err) {
+//                 console.log('ServiceWorker registration failed');
+//             });
+//     });
+// }

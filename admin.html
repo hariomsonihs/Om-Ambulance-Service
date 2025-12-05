@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Om Ambulance Service</title>
+    <link rel="stylesheet" href="admin-styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Admin Navigation -->
+    <nav class="admin-nav">
+        <div class="nav-container">
+            <div class="nav-left">
+                <button class="mobile-menu-btn" onclick="toggleSidebar()">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="nav-logo">
+                    <i class="fas fa-user-shield"></i>
+                    <span>Admin Panel</span>
+                </div>
+            </div>
+            <div class="nav-actions">
+                <button onclick="handleAdminLogout()" class="btn-danger">
+                    <i class="fas fa-sign-out-alt"></i> <span class="btn-text">Logout</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+
+
+    <!-- Admin Dashboard -->
+    <div id="adminDashboard" class="admin-dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+            <div class="sidebar-menu">
+                <button class="menu-item active" onclick="showSection('dashboard')">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Dashboard</span>
+                </button>
+                <button class="menu-item" onclick="showSection('bookings')">
+                    <i class="fas fa-ambulance"></i>
+                    <span>Bookings</span>
+                </button>
+                <button class="menu-item" onclick="showSection('users')">
+                    <i class="fas fa-users"></i>
+                    <span>Users</span>
+                </button>
+                <button class="menu-item" onclick="showSection('makeAdmin')">
+                    <i class="fas fa-user-shield"></i>
+                    <span>Make Admin</span>
+                </button>
+                <button class="menu-item" onclick="showSection('analytics')">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Analytics</span>
+                </button>
+                <button class="menu-item" onclick="showSection('settings')">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Dashboard Section -->
+            <section id="dashboard" class="content-section active">
+                <div class="section-header">
+                    <h1>Dashboard Overview</h1>
+                    <p>Welcome to Om Ambulance Service Admin Panel</p>
+                </div>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-ambulance"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="totalBookings">0</h3>
+                            <p>Total Bookings</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="totalUsers">0</h3>
+                            <p>Registered Users</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="pendingBookings">0</h3>
+                            <p>Pending Bookings</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="completedBookings">0</h3>
+                            <p>Completed Today</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="recent-activity">
+                    <h2>Recent Bookings</h2>
+                    <div id="recentBookings" class="activity-list">
+                        <!-- Recent bookings will be loaded here -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Bookings Section -->
+            <section id="bookings" class="content-section">
+                <div class="section-header">
+                    <h1>Manage Bookings</h1>
+                    <div class="header-actions">
+                        <select id="statusFilter" onchange="filterBookings()">
+                            <option value="">All Status</option>
+                            <option value="pending">Pending</option>
+                            <option value="confirmed">Confirmed</option>
+                            <option value="completed">Completed</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                        <button onclick="refreshBookings()" class="btn-primary">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="table-container">
+                    <table id="bookingsTable" class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Booking ID</th>
+                                <th>Patient Name</th>
+                                <th>Contact</th>
+                                <th>Pickup Address</th>
+                                <th>Emergency Type</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bookingsTableBody">
+                            <!-- Bookings will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Users Section -->
+            <section id="users" class="content-section">
+                <div class="section-header">
+                    <h1>Manage Users</h1>
+                    <div class="header-actions">
+                        <input type="text" id="userSearch" placeholder="Search users..." onkeyup="searchUsers()">
+                        <button onclick="refreshUsers()" class="btn-primary">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="table-container">
+                    <table id="usersTable" class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Joined Date</th>
+                                <th>Total Bookings</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody">
+                            <!-- Users will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Analytics Section -->
+            <section id="analytics" class="content-section">
+                <div class="section-header">
+                    <h1>Analytics & Reports</h1>
+                </div>
+                
+                <div class="analytics-grid">
+                    <div class="chart-card">
+                        <h3>Bookings by Status</h3>
+                        <div id="statusChart" class="chart-container">
+                            <!-- Chart will be rendered here -->
+                        </div>
+                    </div>
+                    
+                    <div class="chart-card">
+                        <h3>Emergency Types</h3>
+                        <div id="emergencyChart" class="chart-container">
+                            <!-- Chart will be rendered here -->
+                        </div>
+                    </div>
+                    
+                    <div class="chart-card">
+                        <h3>Monthly Bookings</h3>
+                        <div id="monthlyChart" class="chart-container">
+                            <!-- Chart will be rendered here -->
+                        </div>
+                    </div>
+                    
+                    <div class="chart-card">
+                        <h3>Response Time Analysis</h3>
+                        <div id="responseChart" class="chart-container">
+                            <!-- Chart will be rendered here -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Make Admin Section -->
+            <section id="makeAdmin" class="content-section">
+                <div class="section-header">
+                    <h1>Make User Admin</h1>
+                    <p>Promote users to admin role</p>
+                </div>
+                
+                <div class="make-admin-container">
+                    <div class="search-user">
+                        <input type="email" id="adminUserEmail" placeholder="Enter user email to make admin">
+                        <button onclick="makeUserAdmin()" class="btn-primary">
+                            <i class="fas fa-user-shield"></i> Make Admin
+                        </button>
+                    </div>
+                    
+                    <div class="current-admins">
+                        <h3>Current Admins</h3>
+                        <div id="adminsList">
+                            <!-- Admin list will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Settings Section -->
+            <section id="settings" class="content-section">
+                <div class="section-header">
+                    <h1>System Settings</h1>
+                </div>
+                
+                <div class="settings-grid">
+                    <div class="settings-card">
+                        <h3>Service Configuration</h3>
+                        <form id="serviceSettings">
+                            <label>Average Response Time (minutes)</label>
+                            <input type="number" id="responseTime" value="10" min="1" max="60">
+                            
+                            <label>Service Area Radius (km)</label>
+                            <input type="number" id="serviceRadius" value="50" min="1" max="200">
+                            
+                            <label>Emergency Contact Number</label>
+                            <input type="tel" id="emergencyNumber" value="108">
+                            
+                            <button type="submit" class="btn-primary">Save Settings</button>
+                        </form>
+                    </div>
+                    
+                    <div class="settings-card">
+                        <h3>Notification Settings</h3>
+                        <form id="notificationSettings">
+                            <label>
+                                <input type="checkbox" id="emailNotifications" checked>
+                                Email Notifications
+                            </label>
+                            
+                            <label>
+                                <input type="checkbox" id="smsNotifications" checked>
+                                SMS Notifications
+                            </label>
+                            
+                            <label>
+                                <input type="checkbox" id="pushNotifications" checked>
+                                Push Notifications
+                            </label>
+                            
+                            <button type="submit" class="btn-primary">Save Settings</button>
+                        </form>
+                    </div>
+                    
+                    <div class="settings-card">
+                        <h3>System Maintenance</h3>
+                        <div class="maintenance-actions">
+                            <button onclick="exportData()" class="btn-secondary">
+                                <i class="fas fa-download"></i> Export Data
+                            </button>
+                            <button onclick="clearOldData()" class="btn-warning">
+                                <i class="fas fa-trash-alt"></i> Clear Old Data
+                            </button>
+                            <button onclick="systemBackup()" class="btn-info">
+                                <i class="fas fa-database"></i> System Backup
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Booking Details Modal -->
+    <div id="bookingDetailsModal" class="modal">
+        <div class="modal-content large">
+            <span class="close" onclick="closeModal('bookingDetailsModal')">&times;</span>
+            <h2>Booking Details</h2>
+            <div id="bookingDetailsContent">
+                <!-- Booking details will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Update Status Modal -->
+    <div id="updateStatusModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('updateStatusModal')">&times;</span>
+            <h2>Update Booking Status</h2>
+            <form id="updateStatusForm">
+                <input type="hidden" id="updateBookingId">
+                <label>New Status:</label>
+                <select id="newStatus" required>
+                    <option value="booked">Booked</option>
+                    <option value="confirmed">Confirmed</option>
+                    <option value="dispatched">Dispatched</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                </select>
+                <label>Notes (Optional):</label>
+                <textarea id="statusNotes" placeholder="Add any notes about this status update..."></textarea>
+                <button type="submit" class="btn-primary">Update Status</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="admin-script.js"></script>
+</body>
+</html>
