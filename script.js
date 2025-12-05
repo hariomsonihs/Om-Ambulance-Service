@@ -54,6 +54,13 @@ function setupMobileMenu() {
     hamburger.addEventListener('click', toggleMenu);
     navOverlay.addEventListener('click', closeMenu);
     
+<<<<<<< HEAD
+=======
+    document.querySelectorAll('.mobile-nav-menu .nav-link').forEach(link => {
+        link.addEventListener('click', closeMenu);
+    });
+    
+>>>>>>> 3b33d7e409d5e1887093711d1e8d1a8f36b89827
     window.addEventListener('resize', () => {
         if (window.innerWidth > 768) {
             closeMenu();
@@ -61,6 +68,7 @@ function setupMobileMenu() {
     });
 }
 
+<<<<<<< HEAD
 function closeMobileMenu() {
     const hamburger = document.getElementById('hamburger');
     const navMenu = document.getElementById('nav-menu');
@@ -72,6 +80,8 @@ function closeMobileMenu() {
     document.body.classList.remove('menu-active');
 }
 
+=======
+>>>>>>> 3b33d7e409d5e1887093711d1e8d1a8f36b89827
 function setupEventListeners() {
     // Form submissions
     const loginForm = document.getElementById('loginForm');
@@ -653,4 +663,8 @@ document.addEventListener('DOMContentLoaded', function() {
         </button>
     `;
     document.body.appendChild(emergencyBtn);
+<<<<<<< HEAD
 });
+=======
+});
+>>>>>>> 3b33d7e409d5e1887093711d1e8d1a8f36b89827

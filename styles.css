@@ -128,12 +128,20 @@ body.menu-active {
     .hamburger {
         display: none !important;
     }
+}
+
+@media (min-width: 769px) {
+    .nav-menu {
+        display: flex !important;
+    }
+    
+    .hamburger {
+        display: none !important;
+    }
     
     .mobile-nav-menu {
         display: none !important;
     }
-}
-
 .hamburger span {
     width: 25px;
     height: 3px;
