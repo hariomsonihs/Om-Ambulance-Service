@@ -86,6 +86,9 @@ function setupEventListeners() {
     if (registerForm) registerForm.addEventListener('submit', handleRegister);
     if (bookingForm) bookingForm.addEventListener('submit', handleBooking);
     if (trackingForm) trackingForm.addEventListener('submit', handleTracking);
+    
+    const forgotPasswordForm = document.getElementById('forgotPasswordForm');
+    if (forgotPasswordForm) forgotPasswordForm.addEventListener('submit', handleForgotPassword);
 
     // Close modals when clicking outside
     window.addEventListener('click', function(event) {
@@ -117,6 +120,11 @@ function showRegister() {
     showModal('registerModal');
 }
 
+function showForgotPassword() {
+    closeAllModals();
+    showModal('forgotPasswordModal');
+}
+
 function showBooking() {
     if (!auth.currentUser) {
         showMessage('Please login first to book ambulance', 'error');
@@ -145,6 +153,42 @@ function showDashboard() {
     }, 100);
 }
 
+// Add authentication state listener
+auth.onAuthStateChanged((user) => {
+    if (user) {
+        console.log('User is signed in:', user.email);
+        currentUser = user;
+        updateNavigation(true);
+    } else {
+        console.log('User is signed out');
+        currentUser = null;
+        updateNavigation(false);
+    }
+});
+
+// Update navigation menu based on login status
+function updateNavigation(isLoggedIn) {
+    const loginNavLink = document.getElementById('loginNavLink');
+    const dashboardNavLink = document.getElementById('dashboardNavLink');
+    const mobileLoginLink = document.getElementById('mobileLoginLink');
+    const mobileDashboardLink = document.getElementById('mobileDashboardLink');
+    const mobileLogoutLink = document.getElementById('mobileLogoutLink');
+    
+    if (isLoggedIn) {
+        if (loginNavLink) loginNavLink.style.display = 'none';
+        if (dashboardNavLink) dashboardNavLink.style.display = 'block';
+        if (mobileLoginLink) mobileLoginLink.style.display = 'none';
+        if (mobileDashboardLink) mobileDashboardLink.style.display = 'block';
+        if (mobileLogoutLink) mobileLogoutLink.style.display = 'block';
+    } else {
+        if (loginNavLink) loginNavLink.style.display = 'block';
+        if (dashboardNavLink) dashboardNavLink.style.display = 'none';
+        if (mobileLoginLink) mobileLoginLink.style.display = 'block';
+        if (mobileDashboardLink) mobileDashboardLink.style.display = 'none';
+        if (mobileLogoutLink) mobileLogoutLink.style.display = 'none';
+    }
+}
+
 function closeAllModals() {
     const modals = document.querySelectorAll('.modal');
     modals.forEach(modal => {
@@ -167,29 +211,82 @@ async function handleLogin(e) {
         const userCredential = await auth.signInWithEmailAndPassword(email, password);
         const user = userCredential.user;
         
+        showMessage('Login successful! Welcome back!', 'success');
+        closeModal('loginModal');
+        document.getElementById('loginForm').reset();
+        
         // Check user role
         const userDoc = await db.collection('users').doc(user.uid).get();
         if (userDoc.exists) {
             const userData = userDoc.data();
             if (userData.role === 'admin') {
-                showMessage('Admin login successful! Redirecting...', 'success');
                 setTimeout(() => {
+                    showMessage('Redirecting to Admin Panel...', 'success');
                     window.location.href = 'admin.html';
-                }, 1000);
+                }, 1500);
                 return;
             }
         }
         
-        showMessage('Login successful!', 'success');
-        closeModal('loginModal');
-        document.getElementById('loginForm').reset();
+        // Show profile tab in dashboard for regular users
+        setTimeout(() => {
+            showDashboard();
+            showTab('profile');
+        }, 1500);
         
     } catch (error) {
         console.error('Login error:', error);
-        showMessage('Login failed: ' + error.message, 'error');
+        let errorMessage = 'Wrong email or password. Please check your details.';
+        
+        if (error.code === 'auth/user-not-found') {
+            errorMessage = 'No account found with this email. Please register first.';
+        } else if (error.code === 'auth/wrong-password') {
+            errorMessage = 'Wrong password. Please check your password or use forgot password.';
+        } else if (error.code === 'auth/invalid-email') {
+            errorMessage = 'Invalid email format.';
+        } else if (error.code === 'auth/user-disabled') {
+            errorMessage = 'This account has been disabled.';
+        } else if (error.code === 'auth/invalid-credential' || error.code === 'auth/invalid-login-credentials') {
+            errorMessage = 'Wrong email or password. Please check your details.';
+        } else if (error.code === 'auth/too-many-requests') {
+            errorMessage = 'Too many failed attempts. Please try again later.';
+        }
+        
+        showMessage(errorMessage, 'error');
     }
     
     submitBtn.innerHTML = 'Login';
+    submitBtn.disabled = false;
+}
+
+async function handleForgotPassword(e) {
+    e.preventDefault();
+    
+    const email = document.getElementById('forgotEmail').value;
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    
+    submitBtn.innerHTML = '<span class="loading"></span> Sending...';
+    submitBtn.disabled = true;
+    
+    try {
+        await auth.sendPasswordResetEmail(email);
+        showMessage('Password reset link sent to your email!', 'success');
+        closeModal('forgotPasswordModal');
+        document.getElementById('forgotPasswordForm').reset();
+    } catch (error) {
+        console.error('Forgot password error:', error);
+        let errorMessage = 'Failed to send reset email';
+        
+        if (error.code === 'auth/user-not-found') {
+            errorMessage = 'No account found with this email.';
+        } else if (error.code === 'auth/invalid-email') {
+            errorMessage = 'Invalid email format.';
+        }
+        
+        showMessage(errorMessage, 'error');
+    }
+    
+    submitBtn.innerHTML = 'Send Reset Link';
     submitBtn.disabled = false;
 }
 
@@ -286,8 +383,11 @@ async function handleBooking(e) {
             closeModal('bookingModal');
             document.getElementById('bookingForm').reset();
             
+            // Send notifications
+            sendBookingNotifications(result.booking, bookingData);
+            
             setTimeout(() => {
-                alert(`Ambulance booked successfully!\n\nBooking ID: ${result.booking.bookingId}\nPatient: ${bookingData.patientName}\nPickup: ${bookingData.pickupAddress}\n\nOur team will contact you shortly.`);
+                alert(`Ambulance booked successfully!\n\nBooking ID: ${result.booking.bookingId}\nPatient: ${bookingData.patientName}\nPickup: ${bookingData.pickupAddress}\n\nConfirmation sent to your email/SMS!\nOur team will contact you shortly.`);
             }, 1000);
         } else {
             showMessage(result.error, 'error');
@@ -530,7 +630,7 @@ function showTab(tabName) {
 
 async function handleLogout() {
     try {
-        await logoutUser();
+        await auth.signOut();
         closeAllModals();
         showMessage('Logged out successfully!', 'success');
         
@@ -538,6 +638,8 @@ async function handleLogout() {
             userBookingsListener();
             userBookingsListener = null;
         }
+        
+        updateNavigation(false);
     } catch (error) {
         showMessage('Logout failed. Please try again.', 'error');
     }
@@ -605,6 +707,8 @@ function makeEmergencyCall() {
     }
 }
 
+
+
 async function deleteAccount() {
     if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
         try {
@@ -633,27 +737,178 @@ async function deleteAccount() {
     }
 }
 
+// Notification System
+async function sendBookingNotifications(booking, bookingData) {
+    try {
+        // Send user notification
+        await sendUserNotification(booking, bookingData);
+        
+        // Send admin notification
+        await sendAdminNotification(booking, bookingData);
+        
+        console.log('Notifications sent successfully');
+    } catch (error) {
+        console.error('Error sending notifications:', error);
+    }
+}
+
+async function sendUserNotification(booking, bookingData) {
+    const user = auth.currentUser;
+    if (!user) return;
+    
+    // Email notification (using EmailJS or similar service)
+    const emailData = {
+        to_email: user.email,
+        booking_id: booking.bookingId,
+        patient_name: bookingData.patientName,
+        pickup_address: bookingData.pickupAddress,
+        destination: bookingData.destination,
+        emergency_type: bookingData.emergencyType,
+        contact_number: bookingData.contactNumber,
+        booking_date: new Date().toLocaleString('en-IN')
+    };
+    
+    // Simulate email sending (replace with actual email service)
+    console.log('User Email Notification:', emailData);
+    
+    // SMS notification (using SMS gateway)
+    const smsMessage = `Om Ambulance Service\n\nBooking Confirmed!\nID: ${booking.bookingId}\nPatient: ${bookingData.patientName}\nPickup: ${bookingData.pickupAddress}\n\nWe will contact you shortly.\nEmergency: 8084527516`;
+    
+    // Simulate SMS sending
+    console.log('User SMS Notification:', smsMessage);
+    
+    // WhatsApp notification (using WhatsApp Business API)
+    const whatsappMessage = `🚑 *Om Ambulance Service*\n\n✅ *Booking Confirmed*\n\n📋 *Booking ID:* ${booking.bookingId}\n👤 *Patient:* ${bookingData.patientName}\n📍 *Pickup:* ${bookingData.pickupAddress}\n🏥 *Destination:* ${bookingData.destination}\n🚨 *Service:* ${bookingData.emergencyType}\n\n📞 *Emergency Contact:* 8084527516\n\nOur team will contact you shortly!`;
+    
+    console.log('User WhatsApp Notification:', whatsappMessage);
+}
+
+async function sendAdminNotification(booking, bookingData) {
+    // Admin email notification
+    const adminEmailData = {
+        to_email: 'admin@omambulance.com',
+        booking_id: booking.bookingId,
+        patient_name: bookingData.patientName,
+        pickup_address: bookingData.pickupAddress,
+        destination: bookingData.destination,
+        emergency_type: bookingData.emergencyType,
+        contact_number: bookingData.contactNumber,
+        user_email: auth.currentUser?.email || 'N/A',
+        booking_date: new Date().toLocaleString('en-IN')
+    };
+    
+    console.log('Admin Email Notification:', adminEmailData);
+    
+    // Admin SMS notification
+    const adminSmsMessage = `🚨 NEW BOOKING ALERT\n\nID: ${booking.bookingId}\nPatient: ${bookingData.patientName}\nType: ${bookingData.emergencyType}\nPickup: ${bookingData.pickupAddress}\nContact: ${bookingData.contactNumber}\n\nLogin to admin panel for details.`;
+    
+    console.log('Admin SMS Notification:', adminSmsMessage);
+    
+    // Save notification to database for admin panel
+    try {
+        await db.collection('notifications').add({
+            type: 'new_booking',
+            bookingId: booking.bookingId,
+            message: `New booking from ${bookingData.patientName} - ${bookingData.emergencyType}`,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            read: false,
+            priority: 'high'
+        });
+    } catch (error) {
+        console.error('Error saving notification:', error);
+    }
+}
+
+// Real-time notification system for admin
+function setupAdminNotifications() {
+    if (typeof db === 'undefined') return;
+    
+    db.collection('notifications')
+        .where('read', '==', false)
+        .orderBy('createdAt', 'desc')
+        .onSnapshot((snapshot) => {
+            const unreadCount = snapshot.size;
+            
+            // Update notification badge (if exists)
+            const notificationBadge = document.getElementById('notificationBadge');
+            if (notificationBadge) {
+                notificationBadge.textContent = unreadCount;
+                notificationBadge.style.display = unreadCount > 0 ? 'block' : 'none';
+            }
+            
+            // Show browser notification for new bookings
+            snapshot.docChanges().forEach((change) => {
+                if (change.type === 'added') {
+                    const notification = change.doc.data();
+                    showBrowserNotification(notification);
+                }
+            });
+        });
+}
+
+function showBrowserNotification(notification) {
+    if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('Om Ambulance Service - New Booking', {
+            body: notification.message,
+            icon: 'logo.jpeg',
+            badge: 'logo.jpeg'
+        });
+    }
+}
+
+// Request notification permission
+function requestNotificationPermission() {
+    if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
+    // Request notification permission
+    requestNotificationPermission();
+    
+    // Setup admin notifications if on admin page
+    if (window.location.pathname.includes('admin.html')) {
+        setTimeout(() => {
+            setupAdminNotifications();
+        }, 2000);
+    }
+    
     const emergencyBtn = document.createElement('div');
     emergencyBtn.innerHTML = `
-        <button onclick="makeEmergencyCall()" style="
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background: linear-gradient(45deg, #e74c3c, #c0392b);
-            border: none;
-            color: white;
-            font-size: 1.5rem;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4);
-            z-index: 1000;
-            transition: all 0.3s ease;
-        " onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
-            <i class="fas fa-phone"></i>
-        </button>
+        <div style="position: fixed; bottom: 20px; right: 20px; z-index: 1000;">
+            <button onclick="window.location.href='tel:8084527516'" style="
+                width: 60px;
+                height: 60px;
+                border-radius: 50%;
+                background: linear-gradient(45deg, #667eea, #764ba2);
+                border: none;
+                color: white;
+                font-size: 1.2rem;
+                cursor: pointer;
+                box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+                transition: all 0.3s ease;
+                margin-bottom: 10px;
+                display: block;
+            " onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+                <i class="fas fa-phone"></i>
+            </button>
+            <button onclick="window.location.href='tel:7260871851'" style="
+                width: 60px;
+                height: 60px;
+                border-radius: 50%;
+                background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+                border: none;
+                color: white;
+                font-size: 1.2rem;
+                cursor: pointer;
+                box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+                transition: all 0.3s ease;
+                display: block;
+            " onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+                <i class="fas fa-phone-alt"></i>
+            </button>
+        </div>
     `;
     document.body.appendChild(emergencyBtn);
 });

@@ -23,17 +23,20 @@
     .mobile-nav-menu {
         position: fixed;
         top: 0;
-        left: -280px;
-        width: 280px;
+        left: -300px;
+        width: 300px;
         height: 100vh;
-        background: linear-gradient(180deg, #2c3e50, #34495e);
+        background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
         z-index: 999999999;
         padding-top: 80px;
         box-sizing: border-box;
-        transition: left 0.3s ease;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         overflow-y: auto;
         display: flex;
         flex-direction: column;
+        backdrop-filter: blur(20px);
+        border-right: 2px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 5px 0 25px rgba(0, 0, 0, 0.3);
     }
     
     .mobile-nav-menu.active {
@@ -41,24 +44,27 @@
     }
     
     .mobile-nav-menu .nav-link {
-        padding: 18px 25px;
-        margin: 8px 15px;
-        border-radius: 12px;
-        font-size: 16px;
-        font-weight: 500;
+        padding: 20px 30px;
+        margin: 10px 20px;
+        border-radius: 15px;
+        font-size: 17px;
+        font-weight: 600;
         display: flex;
         align-items: center;
-        background: rgba(255, 255, 255, 0.05);
-        border-left: 4px solid transparent;
-        transition: all 0.3s ease;
+        background: rgba(255, 255, 255, 0.1);
+        border-left: 5px solid transparent;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         color: white;
         text-decoration: none;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
     }
     
     .mobile-nav-menu .nav-link:hover {
-        background: rgba(231, 76, 60, 0.2);
-        border-left-color: #e74c3c;
-        transform: translateX(8px);
+        background: rgba(255, 255, 255, 0.2);
+        border-left-color: #ffd89b;
+        transform: translateX(10px) scale(1.02);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
     }
     
     .mobile-nav-menu .nav-link i {

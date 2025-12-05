@@ -382,6 +382,9 @@ function displayUsers(users) {
                         <button class="action-btn btn-view" onclick="viewUserDetails('${user.id}')">
                             <i class="fas fa-eye"></i>
                         </button>
+                        <button class="action-btn btn-delete" onclick="deleteUser('${user.id}', '${user.name}')">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
                     </div>
                 </td>
             </tr>
@@ -415,6 +418,41 @@ function viewUserDetails(userId) {
     const userBookings = allBookings.filter(b => b.userId === userId);
     
     alert(`User Details:\n\nName: ${user.name}\nEmail: ${user.email}\nPhone: ${user.phone}\nJoined: ${formatDate(user.createdAt)}\nTotal Bookings: ${userBookings.length}`);
+}
+
+async function deleteUser(userId, userName) {
+    if (!confirm(`Are you sure you want to delete user "${userName}"?\n\nThis will also delete all their bookings and cannot be undone.`)) {
+        return;
+    }
+    
+    try {
+        // Delete user's bookings first
+        const userBookings = await db.collection('bookings')
+            .where('userId', '==', userId)
+            .get();
+        
+        const batch = db.batch();
+        userBookings.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+        
+        // Delete user document
+        batch.delete(db.collection('users').doc(userId));
+        
+        // Commit all deletions
+        await batch.commit();
+        
+        showMessage(`User "${userName}" and their data deleted successfully!`, 'success');
+        
+        // Refresh data
+        loadAllUsers();
+        loadAllBookings();
+        loadDashboardData();
+        
+    } catch (error) {
+        console.error('Error deleting user:', error);
+        showMessage('Error deleting user. Please try again.', 'error');
+    }
 }
 
 // This function is now defined above with mobile sidebar handling
@@ -732,6 +770,61 @@ async function loadAdminsList() {
         
     } catch (error) {
         console.error('Error loading admins:', error);
+    }
+}
+
+// Real-time notification system for admin
+function setupAdminNotifications() {
+    console.log('Setting up admin notifications...');
+    
+    if (typeof db === 'undefined') {
+        console.log('Database not available, retrying...');
+        setTimeout(setupAdminNotifications, 1000);
+        return;
+    }
+    
+    try {
+        db.collection('notifications')
+            .where('read', '==', false)
+            .onSnapshot((snapshot) => {
+                const unreadCount = snapshot.size;
+                console.log('Unread notifications:', unreadCount);
+                
+                // Update notification badge
+                const notificationBadge = document.getElementById('notificationBadge');
+                if (notificationBadge) {
+                    notificationBadge.textContent = unreadCount;
+                    if (unreadCount > 0) {
+                        notificationBadge.style.display = 'flex';
+                    } else {
+                        notificationBadge.style.display = 'none';
+                    }
+                } else {
+                    console.log('Notification badge element not found');
+                }
+                
+                // Show browser notification for new bookings
+                snapshot.docChanges().forEach((change) => {
+                    if (change.type === 'added') {
+                        const notification = change.doc.data();
+                        showBrowserNotification(notification);
+                    }
+                });
+            }, (error) => {
+                console.error('Error listening to notifications:', error);
+            });
+    } catch (error) {
+        console.error('Error setting up notifications:', error);
+    }
+}
+
+function showBrowserNotification(notification) {
+    if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('Om Ambulance Service - New Booking', {
+            body: notification.message,
+            icon: 'logo.jpeg',
+            badge: 'logo.jpeg'
+        });
     }
 }
 
