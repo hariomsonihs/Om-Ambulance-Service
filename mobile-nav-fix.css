@@ -78,13 +78,10 @@
         display: none !important;
     }
     
-<<<<<<< HEAD
     .hamburger {
         display: flex !important;
     }
     
-=======
->>>>>>> 3b33d7e409d5e1887093711d1e8d1a8f36b89827
     /* Body scroll lock */
     body.menu-active {
         overflow: hidden !important;
