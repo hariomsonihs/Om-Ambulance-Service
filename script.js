@@ -6,49 +6,12 @@ let userBookingsListener = null;
 document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
     setupEventListeners();
+    
+    // Mobile menu toggle function
+    setupMobileMenu();
 });
 
 function initializeApp() {
-    // Mobile navigation
-    const hamburger = document.getElementById('hamburger');
-    const navMenu = document.getElementById('nav-menu');
-    const navOverlay = document.getElementById('nav-overlay');
-    
-    hamburger.addEventListener('click', () => {
-        hamburger.classList.toggle('active');
-        navMenu.classList.toggle('active');
-        navOverlay.classList.toggle('active');
-        document.body.style.overflow = navMenu.classList.contains('active') ? 'hidden' : 'auto';
-    });
-
-    // Close navigation when overlay is clicked
-    navOverlay.addEventListener('click', () => {
-        hamburger.classList.remove('active');
-        navMenu.classList.remove('active');
-        navOverlay.classList.remove('active');
-        document.body.style.overflow = 'auto';
-    });
-
-    // Close mobile menu when clicking on links
-    document.querySelectorAll('.nav-link').forEach(link => {
-        link.addEventListener('click', () => {
-            hamburger.classList.remove('active');
-            navMenu.classList.remove('active');
-            navOverlay.classList.remove('active');
-            document.body.style.overflow = 'auto';
-        });
-    });
-
-    // Close navigation on window resize
-    window.addEventListener('resize', () => {
-        if (window.innerWidth > 768) {
-            hamburger.classList.remove('active');
-            navMenu.classList.remove('active');
-            navOverlay.classList.remove('active');
-            document.body.style.overflow = 'auto';
-        }
-    });
-
     // Smooth scrolling for navigation links
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         anchor.addEventListener('click', function (e) {
@@ -67,12 +30,59 @@ function initializeApp() {
     });
 }
 
+function setupMobileMenu() {
+    const hamburger = document.getElementById('hamburger');
+    const navMenu = document.getElementById('nav-menu');
+    const navOverlay = document.getElementById('nav-overlay');
+    
+    if (!hamburger || !navMenu || !navOverlay) return;
+    
+    function toggleMenu() {
+        hamburger.classList.toggle('active');
+        navMenu.classList.toggle('active');
+        navOverlay.classList.toggle('active');
+        document.body.classList.toggle('menu-active');
+    }
+    
+    function closeMenu() {
+        hamburger.classList.remove('active');
+        navMenu.classList.remove('active');
+        navOverlay.classList.remove('active');
+        document.body.classList.remove('menu-active');
+    }
+    
+    hamburger.addEventListener('click', toggleMenu);
+    navOverlay.addEventListener('click', closeMenu);
+    
+    window.addEventListener('resize', () => {
+        if (window.innerWidth > 768) {
+            closeMenu();
+        }
+    });
+}
+
+function closeMobileMenu() {
+    const hamburger = document.getElementById('hamburger');
+    const navMenu = document.getElementById('nav-menu');
+    const navOverlay = document.getElementById('nav-overlay');
+    
+    if (hamburger) hamburger.classList.remove('active');
+    if (navMenu) navMenu.classList.remove('active');
+    if (navOverlay) navOverlay.classList.remove('active');
+    document.body.classList.remove('menu-active');
+}
+
 function setupEventListeners() {
     // Form submissions
-    document.getElementById('loginForm').addEventListener('submit', handleLogin);
-    document.getElementById('registerForm').addEventListener('submit', handleRegister);
-    document.getElementById('bookingForm').addEventListener('submit', handleBooking);
-    document.getElementById('trackingForm').addEventListener('submit', handleTracking);
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+    const bookingForm = document.getElementById('bookingForm');
+    const trackingForm = document.getElementById('trackingForm');
+    
+    if (loginForm) loginForm.addEventListener('submit', handleLogin);
+    if (registerForm) registerForm.addEventListener('submit', handleRegister);
+    if (bookingForm) bookingForm.addEventListener('submit', handleBooking);
+    if (trackingForm) trackingForm.addEventListener('submit', handleTracking);
 
     // Close modals when clicking outside
     window.addEventListener('click', function(event) {
@@ -127,7 +137,6 @@ function showDashboard() {
     closeAllModals();
     showModal('dashboardModal');
     
-    // Add small delay to ensure modal is visible
     setTimeout(() => {
         loadUserDashboard();
     }, 100);
@@ -274,7 +283,6 @@ async function handleBooking(e) {
             closeModal('bookingModal');
             document.getElementById('bookingForm').reset();
             
-            // Show booking confirmation
             setTimeout(() => {
                 alert(`Ambulance booked successfully!\n\nBooking ID: ${result.booking.bookingId}\nPatient: ${bookingData.patientName}\nPickup: ${bookingData.pickupAddress}\n\nOur team will contact you shortly.`);
             }, 1000);
@@ -305,7 +313,6 @@ async function handleTracking(e) {
         
         if (result.success) {
             const booking = result.booking;
-            const statusColor = getStatusColor(booking.status);
             
             resultDiv.innerHTML = `
                 <h3>Booking Details</h3>
@@ -362,10 +369,8 @@ async function loadUserDashboard() {
     try {
         console.log('Loading dashboard for user:', user.uid);
         
-        // Show loading message
         document.getElementById('userProfile').innerHTML = '<div class="loading"></div> Loading profile...';
         
-        // Load user profile directly from Firestore
         const userDoc = await db.collection('users').doc(user.uid).get();
         
         if (userDoc.exists) {
@@ -374,7 +379,6 @@ async function loadUserDashboard() {
             displayUserProfile(userData);
         } else {
             console.log('No user document found, creating basic profile');
-            // Create basic profile from auth data
             const basicProfile = {
                 name: user.displayName || 'User',
                 email: user.email,
@@ -385,7 +389,6 @@ async function loadUserDashboard() {
             displayUserProfile(basicProfile);
         }
         
-        // Load user bookings
         loadUserBookings(user.uid);
     } catch (error) {
         console.error('Error loading dashboard:', error);
@@ -447,7 +450,6 @@ async function loadUserBookings(userId) {
     const bookingsDiv = document.getElementById('userBookings');
     bookingsDiv.innerHTML = '<div class="loading"></div> Loading bookings...';
     
-    // Set up real-time listener
     if (userBookingsListener) {
         userBookingsListener();
     }
@@ -470,7 +472,6 @@ function displayUserBookings(bookings) {
         return;
     }
     
-    // Sort bookings by date (newest first)
     const sortedBookings = bookings.sort((a, b) => {
         const aTime = a.createdAt?.toDate?.() || new Date(a.createdAt);
         const bTime = b.createdAt?.toDate?.() || new Date(b.createdAt);
@@ -497,7 +498,6 @@ function displayUserBookings(bookings) {
     bookingsDiv.innerHTML = bookingsHTML;
 }
 
-// Get status display text
 function getStatusText(status) {
     const statusMap = {
         'booked': 'BOOKED',
@@ -509,33 +509,28 @@ function getStatusText(status) {
     return statusMap[status] || status.toUpperCase();
 }
 
-// Tab functions
 function showTab(tabName) {
-    // Hide all tab contents
     document.querySelectorAll('.tab-content').forEach(tab => {
         tab.classList.remove('active');
     });
     
-    // Remove active class from all tab buttons
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.classList.remove('active');
     });
     
-    // Show selected tab content
     document.getElementById(tabName).classList.add('active');
     
-    // Add active class to clicked button
-    event.target.classList.add('active');
+    if (event && event.target) {
+        event.target.classList.add('active');
+    }
 }
 
-// Logout handler
 async function handleLogout() {
     try {
         await logoutUser();
         closeAllModals();
         showMessage('Logged out successfully!', 'success');
         
-        // Clean up listeners
         if (userBookingsListener) {
             userBookingsListener();
             userBookingsListener = null;
@@ -545,12 +540,10 @@ async function handleLogout() {
     }
 }
 
-// Load user data when authenticated
 async function loadUserData(userId) {
     currentUser = userId;
     console.log('User authenticated:', userId);
     
-    // Test if we can fetch user data
     try {
         const userData = await getUserData(userId);
         console.log('User data loaded:', userData);
@@ -559,21 +552,16 @@ async function loadUserData(userId) {
     }
 }
 
-// Utility functions
 function showMessage(message, type) {
-    // Remove existing messages
     const existingMessages = document.querySelectorAll('.message');
     existingMessages.forEach(msg => msg.remove());
     
-    // Create new message
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${type}`;
     messageDiv.textContent = message;
     
-    // Insert at the top of the body
     document.body.insertBefore(messageDiv, document.body.firstChild);
     
-    // Auto remove after 5 seconds
     setTimeout(() => {
         messageDiv.remove();
     }, 5000);
@@ -608,23 +596,19 @@ function getStatusColor(status) {
     return colors[status] || '#7f8c8d';
 }
 
-// Emergency call function
 function makeEmergencyCall() {
     if (confirm('Do you want to call emergency services?')) {
         window.location.href = 'tel:108';
     }
 }
 
-// Delete account function
 async function deleteAccount() {
     if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
         try {
             const user = auth.currentUser;
             if (user) {
-                // Delete user data from Firestore
                 await db.collection('users').doc(user.uid).delete();
                 
-                // Delete user bookings
                 const bookingsSnapshot = await db.collection('bookings')
                     .where('userId', '==', user.uid)
                     .get();
@@ -635,7 +619,6 @@ async function deleteAccount() {
                 });
                 await batch.commit();
                 
-                // Delete Firebase Auth account
                 await user.delete();
                 
                 showMessage('Account deleted successfully!', 'success');
@@ -647,9 +630,7 @@ async function deleteAccount() {
     }
 }
 
-// Add emergency call button functionality
 document.addEventListener('DOMContentLoaded', function() {
-    // Add emergency floating button
     const emergencyBtn = document.createElement('div');
     emergencyBtn.innerHTML = `
         <button onclick="makeEmergencyCall()" style="
@@ -673,17 +654,3 @@ document.addEventListener('DOMContentLoaded', function() {
     `;
     document.body.appendChild(emergencyBtn);
 });
-
-// Service Worker Registration (for PWA functionality)
-// Commented out until sw.js is created
-// if ('serviceWorker' in navigator) {
-//     window.addEventListener('load', function() {
-//         navigator.serviceWorker.register('/sw.js')
-//             .then(function(registration) {
-//                 console.log('ServiceWorker registration successful');
-//             })
-//             .catch(function(err) {
-//                 console.log('ServiceWorker registration failed');
-//             });
-//     });
-// }
