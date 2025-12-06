@@ -101,6 +101,7 @@
     <link rel="stylesheet" href="mobile-nav-fix.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
 </head>
 <body>
     <nav class="navbar">
@@ -159,8 +160,10 @@
                     <h3>Road Ambulance</h3>
                     <p>Ventilator, Oxygen, AC & Non-AC equipped ambulances for all medical emergencies</p>
                 </div>
-                <div class="service-card">
-                    <i class="fas fa-train"></i>
+                <div class="service-card train-ambulance-card">
+                    <div class="service-image">
+                        <img src="train_ambulance.jpeg" alt="Train Ambulance Service">
+                    </div>
                     <h3>Train Ambulance</h3>
                     <p>Long-distance patient transfer with ICU setup and medical team on board</p>
                 </div>
@@ -171,8 +174,10 @@
                     <h3>Air Ambulance</h3>
                     <p>Fastest medical transportation with advanced life support systems</p>
                 </div>
-                <div class="service-card">
-                    <i class="fas fa-heartbeat"></i>
+                <div class="service-card icu-setup-card">
+                    <div class="service-image">
+                        <img src="icu_setup.jpeg" alt="ICU Setup Ambulance">
+                    </div>
                     <h3>ICU Setup</h3>
                     <p>Advanced Life Support & Basic Life Support with expert medical team</p>
                 </div>
@@ -404,7 +409,6 @@
                 <input type="text" id="patientName" placeholder="Patient Name" required>
                 <input type="tel" id="contactNumber" placeholder="Contact Number" required>
                 <input type="text" id="pickupAddress" placeholder="Pickup Address" required>
-                <input type="text" id="destination" placeholder="Destination Hospital" required>
                 <select id="emergencyType" required>
                     <option value="">Select Service Type</option>
                     <option value="road-ambulance-ac">Road Ambulance (AC)</option>
@@ -493,6 +497,11 @@
         <a href="#" class="nav-link" onclick="showDashboard()" id="mobileDashboardLink" style="display: none;"><i class="fas fa-tachometer-alt"></i>Dashboard</a>
         <a href="#" class="nav-link" onclick="handleLogout()" id="mobileLogoutLink" style="display: none; background: rgba(231, 76, 60, 0.2); border-left-color: #e74c3c;"><i class="fas fa-sign-out-alt"></i>Logout</a>
     </div>
+
+    <!-- WhatsApp Floating Button -->
+    <a href="https://wa.me/917260871851?text=Hello%20I%20want%20an%20ambulance%20service" class="whatsapp-float" target="_blank" aria-label="Contact us on WhatsApp">
+        <i class="fab fa-whatsapp"></i>
+    </a>
 
     <footer class="footer">
         <div class="container">

@@ -126,11 +126,6 @@ function showForgotPassword() {
 }
 
 function showBooking() {
-    if (!auth.currentUser) {
-        showMessage('Please login first to book ambulance', 'error');
-        showLogin();
-        return;
-    }
     closeAllModals();
     showModal('bookingModal');
 }
@@ -366,38 +361,25 @@ async function handleBooking(e) {
         patientName: document.getElementById('patientName').value,
         contactNumber: document.getElementById('contactNumber').value,
         pickupAddress: document.getElementById('pickupAddress').value,
-        destination: document.getElementById('destination').value,
         emergencyType: document.getElementById('emergencyType').value,
         additionalInfo: document.getElementById('additionalInfo').value
     };
     
-    const submitBtn = e.target.querySelector('button[type="submit"]');
-    submitBtn.innerHTML = '<span class="loading"></span> Booking...';
-    submitBtn.disabled = true;
+    // Create professional WhatsApp message
+    const message = `*AMBULANCE BOOKING REQUEST*\n================================\n\n*Patient Name:* ${bookingData.patientName}\n*Contact Number:* ${bookingData.contactNumber}\n*Pickup Address:* ${bookingData.pickupAddress}\n*Service Type:* ${bookingData.emergencyType}${bookingData.additionalInfo ? `\n*Additional Info:* ${bookingData.additionalInfo}` : ''}\n\n================================\n*Request Time:* ${new Date().toLocaleString('en-IN')}\n\n_Please confirm ambulance availability and estimated arrival time._\n\n*Om Ambulance Service Patna*`;
     
-    try {
-        const result = await createBooking(bookingData);
-        
-        if (result.success) {
-            showMessage(`Booking successful! Your booking ID is: ${result.booking.bookingId}`, 'success');
-            closeModal('bookingModal');
-            document.getElementById('bookingForm').reset();
-            
-            // Send notifications
-            sendBookingNotifications(result.booking, bookingData);
-            
-            setTimeout(() => {
-                alert(`Ambulance booked successfully!\n\nBooking ID: ${result.booking.bookingId}\nPatient: ${bookingData.patientName}\nPickup: ${bookingData.pickupAddress}\n\nConfirmation sent to your email/SMS!\nOur team will contact you shortly.`);
-            }, 1000);
-        } else {
-            showMessage(result.error, 'error');
-        }
-    } catch (error) {
-        showMessage('Booking failed. Please try again.', 'error');
-    }
+    // Encode message for WhatsApp URL
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappURL = `https://wa.me/917260871851?text=${encodedMessage}`;
     
-    submitBtn.innerHTML = 'Book Now';
-    submitBtn.disabled = false;
+    // Open WhatsApp
+    window.open(whatsappURL, '_blank');
+    
+    // Close modal and reset form
+    closeModal('bookingModal');
+    document.getElementById('bookingForm').reset();
+    
+    showMessage('Redirecting to WhatsApp... Please send the message to confirm your booking!', 'success');
 }
 
 // Tracking handler
