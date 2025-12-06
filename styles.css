@@ -157,13 +157,13 @@ body.menu-active {
 }
 
 .hero {
-    min-height: 100vh;
+    min-height: auto;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #f5576c 75%, #4facfe 100%);
     background-size: 400% 400%;
     animation: gradientShift 20s ease infinite;
     display: flex;
     align-items: center;
-    padding: 120px 20px 50px;
+    padding: 100px 20px 60px;
     position: relative;
     overflow: hidden;
     z-index: 1;
