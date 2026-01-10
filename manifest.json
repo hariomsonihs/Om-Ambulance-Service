@@ -1,0 +1,27 @@
+{
+  "name": "Om Ambulance Service Patna",
+  "short_name": "Om Ambulance",
+  "description": "24/7 Emergency Medical Transportation Service in Patna, Bihar",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#667eea",
+  "theme_color": "#667eea",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "logo.jpeg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "logo.jpeg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "maskable any"
+    }
+  ],
+  "categories": ["medical", "emergency", "health"],
+  "lang": "hi",
+  "dir": "ltr"
+}
