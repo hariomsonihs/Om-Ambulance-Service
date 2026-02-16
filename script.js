@@ -372,26 +372,9 @@ async function handleBooking(e) {
     const encodedMessage = encodeURIComponent(message);
     const phoneNumber = '917260871851';
     
-    // Try to open WhatsApp with multiple fallback options
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    
-    if (isMobile) {
-        // Mobile: Try app schemes first, then web fallback
-        const whatsappScheme = `whatsapp://send?phone=${phoneNumber}&text=${encodedMessage}`;
-        const whatsappApiScheme = `https://api.whatsapp.com/send?phone=${phoneNumber}&text=${encodedMessage}`;
-        
-        // Try to open WhatsApp app
-        window.location.href = whatsappScheme;
-        
-        // Fallback to API URL after short delay if app doesn't open
-        setTimeout(() => {
-            window.location.href = whatsappApiScheme;
-        }, 1000);
-    } else {
-        // Desktop: Use web.whatsapp.com
-        const whatsappWebURL = `https://web.whatsapp.com/send?phone=${phoneNumber}&text=${encodedMessage}`;
-        window.open(whatsappWebURL, '_blank');
-    }
+    // Use API URL - automatically shows app chooser if multiple WhatsApp apps installed
+    const whatsappURL = `https://api.whatsapp.com/send?phone=${phoneNumber}&text=${encodedMessage}`;
+    window.location.href = whatsappURL;
     
     // Close modal and reset form
     closeModal('bookingModal');
