@@ -1,18 +1,14 @@
 User-agent: *
 Allow: /
 
-# Sitemap
-Sitemap: https://omambulancepatna.com/sitemap.xml
+Sitemap: https://www.omambulanceservice.com/sitemap.xml
 
-# Crawl-delay
 Crawl-delay: 1
 
-# Disallow admin pages
 Disallow: /admin.html
 Disallow: /admin/
 Disallow: /firebase-config.js
 
-# Allow important pages
 Allow: /index.html
 Allow: /styles.css
 Allow: /script.js
